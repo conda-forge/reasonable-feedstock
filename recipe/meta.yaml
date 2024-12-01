@@ -10,23 +10,21 @@ source:
   sha256: 5d26aeb8b6c3f566aa2ef11c308b2208ec7669a30e9113728f243024c6276205
 
 build:
-  number: 2
-  skip: true  # [py<37]
+  number: 3
 
 requirements:
   build:
     - {{ compiler('c') }}                    # [unix]
-    - {{ stdlib("c") }}                      # [unix]
-    - {{ compiler('cxx') }}                  # [unix]
     - {{ compiler('m2w64_c') }}              # [win]
-    - {{ stdlib("m2w64_c") }}                # [win]
+    - {{ stdlib("c") }}
+    - {{ compiler('cxx') }}                  # [unix]
     - {{ compiler('m2w64_cxx') }}            # [win]
-    - {{ min_rust }}
+    - {{ compiler('rust') }}
     - cargo-bundle-licenses
     - clangdev                               # [not osx]
     - llvmdev                                # [not osx]
     - maturin >=0.14.0,<0.15.0
-    - m2w64-binutils                         # [win]
+    - binutils                         # [win]
   host:
     - pip
     - python
