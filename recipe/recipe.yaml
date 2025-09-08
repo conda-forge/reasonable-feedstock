@@ -65,7 +65,7 @@ tests:
       pip_check: true
       python_version:
         - ${{ python_min }}.*
-        - 3.14.*
+        - 3.13.*
 
 about:
   summary: An OWL 2 RL reasoner with reasonable performance
