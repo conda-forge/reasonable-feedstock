@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 set -eux
 
-export RUST_BACKTRACE=1
+# uncomment for (slow) debuuging
+# export RUST_BACKTRACE=1
 
 export CARGO_HOME="${BUILD_PREFIX}/cargo"
 export PATH="${PATH}:${CARGO_HOME}/bin"
@@ -12,19 +13,10 @@ export CARGO_TARGET_AARCH64_APPLE_DARWIN_LINKER="${CC}"
 
 rustc --version
 
-mkdir -p $CARGO_HOME
+mkdir -p "${CARGO_HOME}"
 
-maturin build \
-    --release \
-    --strip \
-    --manylinux off \
-    -i "${PYTHON}"
-
-"${PYTHON}" -m pip install reasonable -vv --no-deps --no-index --find-links "${SRC_DIR}/target/wheels"
+"${PYTHON}" -m pip install . --no-deps --no-build-isolation --disable-pip-version-check
 
 cargo-bundle-licenses \
     --format yaml \
     --output "${SRC_DIR}/THIRDPARTY.yml"
-
-rm -f "${PREFIX}/.crates.toml"
-rm -f "${PREFIX}/.crates2.json"
