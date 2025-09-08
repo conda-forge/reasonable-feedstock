@@ -8,11 +8,11 @@ set PYTHONUTF8=1
 
 rustc --version
 
-%PYTHON% -m pip install . --no-deps --no-build-isolation --disable-pip-version-check ^
+"%PYTHON%" -m pip install . --no-deps --no-build-isolation --disable-pip-version-check ^
     || exit 2
 
 :: dump licenses
 cargo-bundle-licenses ^
     --format yaml ^
-    --output %SRC_DIR%\THIRDPARTY.yml ^
+    --output "%SRC_DIR%\THIRDPARTY.yml" ^
     || exit 3

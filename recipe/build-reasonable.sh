@@ -13,7 +13,7 @@ export CARGO_TARGET_AARCH64_APPLE_DARWIN_LINKER="${CC}"
 
 rustc --version
 
-mkdir -p $CARGO_HOME
+mkdir -p "${CARGO_HOME}"
 
 "${PYTHON}" -m pip install . --no-deps --no-build-isolation --disable-pip-version-check
 
