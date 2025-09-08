@@ -28,8 +28,8 @@ requirements:
     - ${{ compiler("cxx") }}
     - ${{ stdlib("c") }}
     - ${{ compiler("rust") }}
-    - ${{ min_rust }}
     - cargo-bundle-licenses
+    - python
     - if: not osx
       then:
         - clangdev
