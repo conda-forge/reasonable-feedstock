@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: 0.2.6
+  version: "0.4.0"
   maturin_min: "0.14"
   maturin_max: "0.15"
 
@@ -12,10 +12,10 @@ package:
 
 source:
   url: https://pypi.org/packages/source/r/reasonable/reasonable-${{ version }}.tar.gz
-  sha256: 5d26aeb8b6c3f566aa2ef11c308b2208ec7669a30e9113728f243024c6276205
+  sha256: 21dff10a8f587ecce1e5c45e684eceea45dc2484e93973ff1c5ae4545d80840c
 
 build:
-  number: 3
+  number: 0
   skip: not (match(python, python_min ~ ".*") and is_abi3)
   python:
     version_independent: true
