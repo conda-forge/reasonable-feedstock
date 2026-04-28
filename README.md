@@ -3,11 +3,13 @@ About reasonable-feedstock
 
 Feedstock license: [BSD-3-Clause](https://github.com/conda-forge/reasonable-feedstock/blob/main/LICENSE.txt)
 
-Home: https://github.com/gtfierro/reasonable
+Home: https://pypi.org/project/reasonable
 
 Package license: BSD-3-Clause
 
 Summary: An OWL 2 RL reasoner with reasonable performance
+
+Development: https://github.com/gtfierro/reasonable
 
 Current build status
 ====================
