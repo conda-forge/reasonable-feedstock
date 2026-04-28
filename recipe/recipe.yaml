@@ -2,71 +2,114 @@
 schema_version: 1
 
 context:
-  version: 0.2.6
-  maturin_min: "0.14"
-  maturin_max: "0.15"
+  version: "0.4.0"
+  python_check_max: "3.14"
+  abi3_ext: ${{ "pyd" if win else "abi3.so" }}
+  unix_sp_dir: |-
+    $(python -c "print(__import__('site').getsitepackages()[-1])")/reasonable
+  win_sp_dir: |-
+    Lib\site-packages\reasonable
+  sp_dir: |-
+    ${{ "%PREFIX%\\" ~ win_sp_dir if win else unix_sp_dir }}
 
 package:
   name: reasonable
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/r/reasonable/reasonable-${{ version }}.tar.gz
-  sha256: 5d26aeb8b6c3f566aa2ef11c308b2208ec7669a30e9113728f243024c6276205
+  - target_directory: dist
+    url: https://pypi.org/packages/source/r/reasonable/reasonable-${{ version }}.tar.gz
+    sha256: 21dff10a8f587ecce1e5c45e684eceea45dc2484e93973ff1c5ae4545d80840c
+  - target_directory: src
+    url: https://github.com/gtfierro/reasonable/releases/download/v${{ version }}/reasonable_v${{ version }}.tar.gz
+    sha256: 63faa8ae9ac699e0934f5becddc2b248ac48cb6dd389a605f728e4a814ec2fae
 
 build:
-  number: 3
-  skip: not (match(python, python_min ~ ".*") and is_abi3)
+  number: 0
+  skip: is_abi3 and not is_python_min
   python:
-    version_independent: true
+    version_independent: ${{ is_abi3 }}
   script:
-    file: build-reasonable
+    env:
+      CARGO_PROFILE_RELEASE_LTO: fat
+      CARGO_PROFILE_RELEASE_STRIP: symbols
+      MATURIN_PEP517_ARGS: --features=abi3
+      PYTHONIOENCODING: UTF-8
+      PYTHONUTF8: "1"
+    content:
+      - cd dist
+      - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check
+      - cargo-bundle-licenses --format yaml --output THIRDPARTY.yml
 
 requirements:
   build:
     - ${{ compiler("c") }}
     - ${{ compiler("cxx") }}
-    - ${{ stdlib("c") }}
     - ${{ compiler("rust") }}
+    - ${{ stdlib("c") }}
     - cargo-bundle-licenses
     - python
     - if: not osx
       then:
         - clangdev
         - llvmdev
-    - if: build_platform != target_platform
-      then:
-        - cross-python_${{ target_platform }}
-        - maturin >=${{ maturin_min }},<${{ maturin_max }}
-        - python
   host:
+    - maturin >=1.8,<2.0
     - pip
     - python
-    - python-abi3
-    - maturin >=${{ maturin_min }},<${{ maturin_max }}
+    - if: is_abi3
+      then:
+        - python-abi3
   run:
     - python
-  run_constraints:
-    - rdflib >=6.1
+    - rdflib >=6.1.1
   ignore_run_exports:
-    from_package:
-      - cross-python_${{ target_platform }}
+    by_name:
+      - if: is_abi3
+        then:
+          - python_abi
 
 tests:
-  - python:
-      imports: reasonable
-      pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - 3.13.*
+  - if: is_abi3
+    then:
+      - python:
+          imports: reasonable
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - ${{ python_check_max }}.*
+    else:
+      - python:
+          imports: reasonable
+          pip_check: true
+  - files:
+      source:
+        - src/python/tests/
+        - src/example_models/ontologies/rdfs.ttl
+    requirements:
+      run:
+        - pytest
+        - if: is_abi3
+          then:
+            - python ${{ python_check_max }}.*
+            - abi3audit
+    script:
+      - cd src/python
+      # don't bother with coverage; one generated file with `*` import
+      - pytest -vv --tb=long --color=yes
+      - if: is_abi3
+        then:
+          - cd "${{ sp_dir }}"
+          - abi3audit -s -v --assume-minimum-abi3 ${{ python_min }} reasonable.${{ abi3_ext }}
 
 about:
   summary: An OWL 2 RL reasoner with reasonable performance
   license: BSD-3-Clause
   license_file:
-    - LICENSE
-    - THIRDPARTY.yml
-  homepage: https://github.com/gtfierro/reasonable
+    - dist/LICENSE
+    - dist/THIRDPARTY.yml
+  homepage: https://pypi.org/project/reasonable
+  repository: https://github.com/gtfierro/reasonable
 
 extra:
   recipe-maintainers:
