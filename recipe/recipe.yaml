@@ -29,17 +29,17 @@ build:
     env:
       PYTHONIOENCODING: UTF-8
       PYTHONUTF8: "1"
+      MATURIN_PEP517_ARGS: --features=abi3
     content:
-      - cd python
-      - ${{ PYTHON }} -m pip install . --no-deps --no-build-isolation --disable-pip-version-check
+      - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check
       - cargo-bundle-licenses --format yaml --output THIRDPARTY.yml
 
 requirements:
   build:
     - ${{ compiler("c") }}
     - ${{ compiler("cxx") }}
-    - ${{ stdlib("c") }}
     - ${{ compiler("rust") }}
+    - ${{ stdlib("c") }}
     - cargo-bundle-licenses
     - python
     - if: not osx
@@ -78,6 +78,7 @@ tests:
         - pytest-cov
         - if: is_abi3
           then:
+            - python ${{ python_check_max }}.*
             - abi3audit
     script:
       - cd python
@@ -85,7 +86,7 @@ tests:
       - coverage report --show-missing --skip-covered --fail-under=100
       - if: is_abi3
         then:
-          - cd ${{ sp_dir }}
+          - cd "${{ sp_dir }}"
           - abi3audit -s -v --assume-minimum-abi3 ${{ python_min }} reasonable.${{ abi3_ext }}
 
 about:
@@ -94,7 +95,8 @@ about:
   license_file:
     - LICENSE
     - THIRDPARTY.yml
-  homepage: https://github.com/gtfierro/reasonable
+  homepage: https://pypi.org/project/reasonable
+  repository: https://github.com/gtfierro/reasonable
 
 extra:
   recipe-maintainers:
