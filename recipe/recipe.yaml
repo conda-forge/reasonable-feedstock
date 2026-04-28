@@ -3,8 +3,14 @@ schema_version: 1
 
 context:
   version: "0.4.0"
-  maturin_min: "0.14"
-  maturin_max: "0.15"
+  python_check_max: "3.14"
+  abi3_ext: ${{ "pyd" if win else "abi3.so" }}
+  unix_sp_dir: |-
+    $(python -c "print(__import__('site').getsitepackages()[-1])")/reasonable
+  win_sp_dir: |-
+    Lib\site-packages\reasonable
+  sp_dir: |-
+    ${{ "%PREFIX%\\" ~ win_sp_dir if win else unix_sp_dir }}
 
 package:
   name: reasonable
@@ -16,11 +22,17 @@ source:
 
 build:
   number: 0
-  skip: not (match(python, python_min ~ ".*") and is_abi3)
+  skip: is_abi3 and not is_python_min
   python:
-    version_independent: true
+    version_independent: ${{ is_abi3 }}
   script:
-    file: build-reasonable
+    env:
+      PYTHONIOENCODING: UTF-8
+      PYTHONUTF8: "1"
+    content:
+      - cd python
+      - ${{ PYTHON }} -m pip install . --no-deps --no-build-isolation --disable-pip-version-check
+      - cargo-bundle-licenses --format yaml --output THIRDPARTY.yml
 
 requirements:
   build:
@@ -34,31 +46,47 @@ requirements:
       then:
         - clangdev
         - llvmdev
-    - if: build_platform != target_platform
-      then:
-        - cross-python_${{ target_platform }}
-        - maturin >=${{ maturin_min }},<${{ maturin_max }}
-        - python
   host:
+    - maturin >=1.8,<2.0
     - pip
     - python
-    - python-abi3
-    - maturin >=${{ maturin_min }},<${{ maturin_max }}
+    - if: is_abi3
+      then:
+      - python-abi3
   run:
     - python
-  run_constraints:
-    - rdflib >=6.1
-  ignore_run_exports:
-    from_package:
-      - cross-python_${{ target_platform }}
+    - rdflib >=6.1.1
 
 tests:
-  - python:
-      imports: reasonable
-      pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - 3.13.*
+  - if: is_abi3
+    then:
+      - python:
+          imports: reasonable
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - ${{ python_check_max }}.*
+    else:
+      - python:
+          imports: reasonable
+          pip_check: true
+  - files:
+      source:
+        - python/tests/
+    requirements:
+      run:
+        - pytest-cov
+        - if: is_abi3
+          then:
+            - abi3audit
+    script:
+      - cd python
+      - coverage run -m pytest -vv --tb=long --color=yes
+      - coverage report --show-missing --skip-covered --fail-under=100
+      - if: is_abi3
+        then:
+          - cd ${{ sp_dir }}
+          - abi3audit -s -v --assume-minimum-abi3 ${{ python_min }} reasonable.${{ abi3_ext }}
 
 about:
   summary: An OWL 2 RL reasoner with reasonable performance
