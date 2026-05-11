@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "0.4.0"
+  version: "0.4.1"
   python_check_max: "3.14"
   abi3_ext: ${{ "pyd" if win else "abi3.so" }}
   unix_sp_dir: |-
@@ -19,10 +19,10 @@ package:
 source:
   - target_directory: dist
     url: https://pypi.org/packages/source/r/reasonable/reasonable-${{ version }}.tar.gz
-    sha256: 21dff10a8f587ecce1e5c45e684eceea45dc2484e93973ff1c5ae4545d80840c
+    sha256: 048bfdc5e80f81bcab5e7b321e38253c3aeefba09ec0be52571a981299a81fa0
   - target_directory: src
     url: https://github.com/gtfierro/reasonable/releases/download/v${{ version }}/reasonable_v${{ version }}.tar.gz
-    sha256: 63faa8ae9ac699e0934f5becddc2b248ac48cb6dd389a605f728e4a814ec2fae
+    sha256: 4f1f8eadb193c3a259e37bc70f09d22f598754ddc00048e7fb55dfc0150c03e2
 
 build:
   number: 0
