@@ -50,7 +50,12 @@ requirements:
     - ${{ compiler("rust") }}
     - ${{ stdlib("c") }}
     - cargo-bundle-licenses
-    - python
+    - cargo-auditable
+    - if: build_platform != target_platform
+      then:
+        - cross-python_${{ target_platform }}
+        - crossenv
+        - python
     - if: not osx
       then:
         - clangdev
