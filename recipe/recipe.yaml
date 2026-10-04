@@ -74,6 +74,8 @@ requirements:
 tests:
   - package_contents:
       strict: true
+      files:
+        - etc/conda/test-files/reasonable/**
       site_packages:
         - reasonable/**
         - reasonable-${{ version }}.dist-info/**
