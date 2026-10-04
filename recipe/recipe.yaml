@@ -3,14 +3,8 @@ schema_version: 1
 
 context:
   version: "0.4.4"
+  cargo_wrapper: cargo-auditable-wrapper${{ ".sh" if unix else ".bat" }}
   python_check_max: "3.14"
-  abi3_ext: ${{ "pyd" if win else "abi3.so" }}
-  unix_sp_dir: |-
-    $(python -c "print(__import__('site').getsitepackages()[-1])")/reasonable
-  win_sp_dir: |-
-    Lib\site-packages\reasonable
-  sp_dir: |-
-    ${{ "%PREFIX%\\" ~ win_sp_dir if win else unix_sp_dir }}
 
 package:
   name: reasonable
@@ -18,7 +12,7 @@ package:
 
 source:
   - target_directory: dist
-    url: https://pypi.org/packages/source/r/reasonable/reasonable-${{ version }}.tar.gz
+    url: https://files.pythonhosted.org/packages/source/r/reasonable/reasonable-${{ version }}.tar.gz
     sha256: dac7b568b5e5237ec03250dc35b786a60c32d844a94d691c3bff0b0d86f40fd5
   - target_directory: src
     url: https://github.com/gtfierro/reasonable/releases/download/v${{ version }}/reasonable_v${{ version }}.tar.gz
@@ -31,14 +25,22 @@ build:
     version_independent: ${{ is_abi3 }}
   script:
     env:
+      CARGO: ${{ cargo_wrapper }}
       CARGO_PROFILE_RELEASE_LTO: fat
       CARGO_PROFILE_RELEASE_STRIP: symbols
       MATURIN_PEP517_ARGS: --features=abi3
       PYTHONIOENCODING: UTF-8
       PYTHONUTF8: "1"
     content:
+      - if: win
+        then:
+          - set CARGO_HOME=c:\.cg
+          - copy "%RECIPE_DIR%\${{ cargo_wrapper }}" "%BUILD_PREFIX%\Library\bin\"
+        else:
+          - cp "${RECIPE_DIR}/${{ cargo_wrapper }}" "${BUILD_PREFIX}/bin/"
+          - chmod 755 "${BUILD_PREFIX}/bin/${{ cargo_wrapper }}"
       - cd dist
-      - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check
+      - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check --check-build-dependencies
       - cargo-bundle-licenses --format yaml --output THIRDPARTY.yml
 
 requirements:
@@ -59,39 +61,42 @@ requirements:
     - python
     - if: is_abi3
       then:
+        - python ${{ python_min }}.*
         - python-abi3
   run:
     - python
     - rdflib >=6.1.1
-  ignore_run_exports:
-    by_name:
-      - if: is_abi3
-        then:
-          - python_abi
+    - if: is_abi3
+      then:
+        - python >=${{ python_min }}
+        - python-abi3
 
 tests:
-  - if: is_abi3
-    then:
-      - python:
-          imports: reasonable
-          pip_check: true
-          python_version:
+  - package_contents:
+      strict: true
+      site_packages:
+        - reasonable/**
+        - reasonable-${{ version }}.dist-info/**
+  - python:
+      imports: reasonable
+      pip_check: true
+      python_version:
+        - if: is_abi3
+          then:
             - ${{ python_min }}.*
             - ${{ python_check_max }}.*
-    else:
-      - python:
-          imports: reasonable
-          pip_check: true
+          else:
+            - "*"
   - files:
       source:
-        - src/python/tests/
+        - src/python/tests/**
         - src/example_models/ontologies/rdfs.ttl
     requirements:
       run:
         - pytest
         - if: is_abi3
           then:
-            - python ${{ python_check_max }}.*
+            - python ${{ python_min }}.*
             - abi3audit
     script:
       - cd src/python
@@ -99,8 +104,9 @@ tests:
       - pytest -vv --tb=long --color=yes
       - if: is_abi3
         then:
-          - cd "${{ sp_dir }}"
-          - abi3audit -s -v --assume-minimum-abi3 ${{ python_min }} reasonable.${{ abi3_ext }}
+          - if: unix
+            then: abi3audit -s -v --assume-minimum-abi3 ${{ python_min }} "${SP_DIR}/reasonable/reasonable.abi3.so"
+            else: abi3audit -s -v --assume-minimum-abi3 ${{ python_min }} "%SP_DIR%\reasonable\reasonable.pyd"
 
 about:
   summary: An OWL 2 RL reasoner with reasonable performance
